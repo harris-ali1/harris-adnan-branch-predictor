@@ -1,0 +1,28 @@
+#!/bin/csh
+if ( $1 == "" ) then
+	printf "Usage: $0 <trace-file-directory>\n"
+	exit 1
+endif
+if ( ! -e src/predict_extra_credit ) then
+	printf "predict_extra_credit program is not built.\n"
+	exit 1
+endif
+set trace_list = `find $1 -name '*.trace.*' | sort`
+set dsum = 0
+set tsum = 0
+set n = 0
+printf "%-40s\t%10s\t%10s\n" "trace" "dir MPKI" "tgt MPKI"
+foreach i ( $trace_list )
+	set out = `./src/predict_extra_credit $i | tail -1`
+	set d = `echo "$out" | sed -e 's/.*Direction: *\([0-9.]*\).*/\1/'`
+	set t = `echo "$out" | sed -e 's/.*Target: *\([0-9.]*\).*/\1/'`
+	printf "%-40s\t%10.3f\t%10.3f\n" $i $d $t
+	set dsum = `printf "$dsum\n$d\n+\np\n" | dc`
+	set tsum = `printf "$tsum\n$t\n+\np\n" | dc`
+	@ n = $n + 1
+end
+printf "average direction MPKI: "
+printf "3\nk\n$dsum\n$n\n/p\n" | dc
+printf "average target MPKI: "
+printf "3\nk\n$tsum\n$n\n/p\n" | dc
+exit 0

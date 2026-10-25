@@ -1,0 +1,53 @@
+# Pentium M Branch Predictor (CBP-2)
+
+Implementation of a Pentium M-style hybrid branch predictor on the CBP-2 branch prediction infrastructure.
+
+- **Required:** `pm_predictor`, a bimodal + 4-way tagged global predictor. **5.848 average MPKI** (sample gshare: 6.306).
+- **Extra credit:** `cpm_predictor`, the full Pentium M unit (BTB, loop predictor, PIR, iBTB, RAS). 6.085 direction MPKI and 6.417 target MPKI.
+
+See [REPORT.md](REPORT.md) for the design, results and experiments.
+
+## Files changed from the original infrastructure
+
+| File | Change |
+|---|---|
+| `src/my_predictor.h` | Implemented `pm_predictor` and `cpm_predictor` |
+| `src/predictor.h` | Fixed `target_prediction()` to return `unsigned int` instead of `bool` |
+| `run_extra` | Fixed parsing of the two-value extra-credit output; reports both averages |
+
+## Build and run
+
+Requires `g++`, `bzip2`, `csh` and `dc`. On Debian/Ubuntu: `sudo apt install tcsh dc`.
+
+```sh
+cd cbp2-infrastructure-v2/src
+make                      # builds predict and predict_extra_credit
+cd ..
+./run traces              # required part: direction MPKI per trace + average
+./run_extra traces        # extra credit: direction and target MPKI
+```
+
+Run a single trace:
+
+```sh
+./src/predict traces/164.gzip/gzip.trace.bz2
+./src/predict_extra_credit traces/164.gzip/gzip.trace.bz2
+```
+
+## Configuration
+
+Options are compile-time macros, passed through `CXXFLAGS`:
+
+```sh
+make clean && make CXXFLAGS="-g -O3 -DPM_GLOBAL_WAYS=2"
+```
+
+| Macro | Default | Meaning |
+|---|---|---|
+| `PM_GLOBAL_WAYS` | 4 | Global predictor associativity (the handout allows 2) |
+| `PM_HIST_LEN` | 15 | Global history length |
+| `PM_ALLOC_ALWAYS` | 0 | 1 = allocate a global entry on every miss (the handout's example policy) |
+| `CPM_USE_LOOP` | 1 | Enable the loop predictor |
+| `CPM_USE_PIR` | 1 | 0 = use the conditional-outcome GHR instead of the PIR |
+| `CPM_LOOP_OVER_GLOBAL` | 0 | 1 = a confident loop prediction overrides a global hit |
+| `PM_STATS` | off | Print global hit rate and loop usage to stderr |
